@@ -46,4 +46,4 @@ val_interval = 2
 
 writer = SummaryWriter()
 
-train(epoch_num, val_interval, best_metric)
+train(epoch_num, val_interval, train_loader, val_loader, writer, train_ds)

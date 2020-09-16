@@ -5,9 +5,13 @@ import matplotlib.pyplot as plt
 import os
 import glob
 from monai.data import CacheDataset, DataLoader, Dataset
+from torch.utils.tensorboard import SummaryWriter
+from monai.losses import DiceLoss
 
 import dataset
 import data_transformation
+from models import model_unet
+from training import train
 
 # Path for all the images and labels in local device
 image_path = "/home/suprim/dataset/MontgomerySet/CXR_png"
@@ -34,3 +38,12 @@ val_ds = CacheDataset(data=val_files,
 # Loading the dataset
 train_loader = DataLoader(train_ds, batch_size= 10, shuffle= True, num_workers=4)
 val_loader= DataLoader(val_ds, batch_size = 1)
+
+loss_function = DiceLoss(to_onehot_y= True, softmax= True)
+optimizer = torch.optim.Adam(model_unet.parameters(), lr=1e-4)
+epoch_num=10
+val_interval = 2
+
+writer = SummaryWriter()
+
+train(epoch_num, val_interval, best_metric)

@@ -28,15 +28,15 @@ train_files, val_files = data_dicts[:-9], data_dicts[-9:]
 # Transforming the dataset
 train_ds = CacheDataset(data=train_files,
                         transform=data_transformation.train_transforms,
-                        cache_rate=1.0,
+                        cache_rate=0.3,
                         num_workers=4)
 val_ds = CacheDataset(data=val_files,
                       transform=data_transformation.val_transforms,
-                      cache_rate=1.0,
+                      cache_rate=0.3,
                       num_workers=4)
 
 # Loading the dataset
-train_loader = DataLoader(train_ds, batch_size= 10, shuffle= True, num_workers=4)
+train_loader = DataLoader(train_ds, batch_size= 5, shuffle= True, num_workers=4)
 val_loader= DataLoader(val_ds, batch_size = 1)
 
 loss_function = DiceLoss(to_onehot_y= True, softmax= True)
@@ -44,6 +44,6 @@ optimizer = torch.optim.Adam(model_unet.parameters(), lr=1e-4)
 epoch_num=10
 val_interval = 2
 
-writer = SummaryWriter()
+writer = SummaryWriter("/home/suprim/dataset/MontgomerySet/Run")
 
-train(epoch_num, val_interval, train_loader, val_loader, writer, train_ds)
+train(epoch_num, val_interval, train_loader, val_loader, writer, train_ds, loss_function, optimizer)

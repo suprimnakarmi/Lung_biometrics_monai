@@ -5,10 +5,10 @@ from monai.metrics import compute_meandice
 
 
 from models import model_unet, device
-from main import optimizer, loss_function
+#from main import optimizer, loss_function
 
 
-def train(epoch_num, val_interval, train_loader, val_loader, writer, train_ds ):
+def train(epoch_num, val_interval, train_loader, val_loader, writer, train_ds, loss_function, optimizer):
     best_metric = -1
     best_metric_epoch = -1
     total_train = 0
@@ -45,11 +45,11 @@ def train(epoch_num, val_interval, train_loader, val_loader, writer, train_ds ):
             writer.add_scalar("train_loss",loss.item(),epoch_len* epoch+step)
             writer.add_scalar("train_accuracy", train_accuracy, epoch_len* epoch+step)
 
-        epoch_loss /=step
+        epoch_loss /= step
         epoch_loss_values.append(epoch_loss)
         print(f"epoch{epoch +1} average loss: {epoch_loss:.4f}")
 
-        if(epoch+1)% val_loader==0:
+        if(epoch+1)% val_interval==0:
             model_unet.eval()
             metric_sum=0.0
             metric_count= 0
@@ -58,6 +58,12 @@ def train(epoch_num, val_interval, train_loader, val_loader, writer, train_ds ):
                     val_data["image"].to(device),
                     val_data["label"].to(device),
                 )
+                # Calculating the validation loss
+                v_outputs= model_unet(val_inputs)
+                loss_val = loss_function(v_outputs, val_labels)
+                print(f"validation_loss: {loss_val.item()}")
+                writer.add_scalar("validation_loss", loss_val.item(), epoch_len* epoch + step)
+
                 roi_size=(160,160)
                 sw_batch_size= 4
                 val_outputs = sliding_window_inference(val_inputs,roi_size, sw_batch_size, model_unet)
@@ -76,7 +82,7 @@ def train(epoch_num, val_interval, train_loader, val_loader, writer, train_ds ):
             if metric>best_metric:
                 best_metric = metric
                 best_metric_epoch = epoch +1
-                torch.save(model_unet.state_dict(), os.path.join())
+                torch.save(model_unet.state_dict(), os.path.join('/home/suprim/dataset/MontgomerySet/best_metric',"best_metric_model_10.pth"))
                 print("saved new best metric model")
                 print(f"current epoch: {epoch + 1} current mean dice: {metric:.4f}"
                       f"\n best mean dice: {best_metric:.4f} at epoch: {best_metric_epoch}"

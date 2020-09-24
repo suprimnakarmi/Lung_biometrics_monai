@@ -11,8 +11,8 @@ from models import model_unet, device
 def train(epoch_num, val_interval, train_loader, val_loader, writer, train_ds, loss_function, optimizer):
     best_metric = -1
     best_metric_epoch = -1
-    total_train = 0
-    correct_train = 0
+    metric_count_train =0
+    metric_sum_train = 0.0
     epoch_loss_values = list()
     metric_values = list()
     for epoch in range(epoch_num):
@@ -35,21 +35,32 @@ def train(epoch_num, val_interval, train_loader, val_loader, writer, train_ds, l
             epoch_loss += loss.item()
             epoch_len = len(train_ds)// train_loader.batch_size
 
-            # Check the accuracy for training dataset
-            _, predicted = torch.max(outputs.data,1)
-            total_train += labels.nelement()
-            correct_train += predicted.eq(torch.squeeze(labels.data,1)).sum().item()
-            train_accuracy = correct_train/ total_train
+            # Check the mean dice for training dataset
+            value_train = compute_meandice(
+                        y_pred= outputs,
+                        y = labels,
+                        include_background= False,
+                        to_onehot_y= True,
+                        mutually_exclusive= True,
+            )
 
-            print(f"{step}/{epoch_len}, train_loss: {loss.item():.4f}, train_accuracy: {train_accuracy:.4f}")
+            metric_count_train += len(value_train)
+            metric_sum_train += value_train.sum().item()
+
+            count_batch_size = len(value_train)
+            avg_metric = value_train.sum().item()/ count_batch_size
+
+            print(f"{step}/{epoch_len}, train_loss: {loss.item():.4f}, train_accuracy: {avg_metric:.4f}")
             writer.add_scalar("train_loss",loss.item(),epoch_len* epoch+step)
-            writer.add_scalar("train_accuracy", train_accuracy, epoch_len* epoch+step)
+            #writer.add_scalar("train_accuracy", train_accuracy, epoch_len* epoch+step)
 
         epoch_loss /= step
         epoch_loss_values.append(epoch_loss)
-        print(f"epoch{epoch +1} average loss: {epoch_loss:.4f}")
+        metric_train = metric_sum_train/metric_count_train
+        print(f"epoch{epoch +1} average loss: {epoch_loss:.4f} average metric: {metric_train:.4f}")
+        writer.add_scalar("train_metric", metric_train, epoch + 1)
 
-        if(epoch+1)% val_interval==0:
+        if(epoch+1)% val_interval==0:  # Evaluation of the model
             model_unet.eval()
             metric_sum=0.0
             metric_count= 0
@@ -67,6 +78,7 @@ def train(epoch_num, val_interval, train_loader, val_loader, writer, train_ds, l
                 roi_size=(160,160)
                 sw_batch_size= 4
                 val_outputs = sliding_window_inference(val_inputs,roi_size, sw_batch_size, model_unet)
+                # Computing mean dice for evaluation
                 value = compute_meandice(
                     y_pred = val_outputs,
                     y = val_labels,

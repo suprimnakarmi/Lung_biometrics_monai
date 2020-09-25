@@ -20,15 +20,55 @@ model_unet = UNet(
 ).to(device)
 
 # A function for double convolution in all the stages
-def double_conv(in_c, out_c):
+def single_conv(in_c, out_c):
     conv = nn.Sequential(
         nn.Conv2d(in_c, out_c, kernel_size=3, padding= 1),
         nn.BatchNorm2d(out_c),
         nn.ReLU(inplace= True),
-        nn.Conv2d(out_c, out_c, kernel_size =3, padding = 1),
-        nn.BatchNorm2d(out_c),
-        nn.ReLU(inplace= True)
     )
+    return conv
 
-class SegNet()
+# Applying SegNet as per the research paper
+class SegNet(nn.Module):
+    def __init__(self, input_channel, output_channel):
+        super(SegNet, self).__init__()
+        # Defining the stages for encoder of the network
+        self.down_conv_11 = single_conv(input_channel,64)
+        self.down_conv_12 = single_conv(64,64)
+
+        self.down_conv_21 = single_conv(64, 128)
+        self.down_conv_22 = single_conv(128, 128)
+
+        self.down_conv_31 = single_conv(128, 256)
+        self.down_conv_32 = single_conv(256, 256)
+        self.down_conv_33 = single_conv(256, 256)
+
+        self.down_conv_41 = single_conv(256, 512)
+        self.down_conv_42 = single_conv(512, 512)
+        self.down_conv_43 = single_conv(512, 512)
+
+        self.down_conv_51 = single_conv(512, 512)
+        self.down_conv_52 = single_conv(512, 512)
+        self.down_conv_53 = single_conv(512, 512)
+
+        # Defining the stages for decoder of the network
+        self.down_conv_53d = single_conv(512, 512)
+        self.down_conv_52d = single_conv(512, 512)
+        self.down_conv_51d = single_conv(512, 512)
+
+        self.down_conv_43d = single_conv(512, 512)
+        self.down_conv_42d = single_conv(512, 512)
+        self.down_conv_41d = single_conv(512, 256)
+
+        self.down_conv_33d = single_conv(256, 256)
+        self.down_conv_32d = single_conv(256, 256)
+        self.down_conv_31d = single_conv(256, 128)
+
+        self.down_conv_22d = single_conv(128, 128)
+        self.down_conv_21d = single_conv(128, 64)
+
+        self.down_conv_12d = single_conv(64, 64)
+        self.down_conv_1 = single_conv(64, output_channel)
+
+
 

@@ -4,6 +4,7 @@ from monai.networks.layers import Norm
 from monai.networks.nets import UNet
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 # Set device to cpu if no Gpu is available
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -69,6 +70,17 @@ class SegNet(nn.Module):
 
         self.down_conv_12d = single_conv(64, 64)
         self.down_conv_1 = single_conv(64, output_channel)
+
+    def forward(self,x):
+# Stage 1
+        x11 = self.down_conv11(x)
+        x12 = self.down_conv12(x11)
+        x1p, id1 = F.max_pool2d(x12, kernel_size = 2 , stride = 2, return_indices = True)
+
+# Stage 2
+        x21 = self.down_conv_21()
+
+
 
 
 
